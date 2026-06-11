@@ -1,3 +1,11 @@
+// Automatically load the key from browser storage when the page opens
+document.addEventListener('DOMContentLoaded', () => {
+    const savedKey = localStorage.getItem('gemini_api_key');
+    if (savedKey) {
+        document.getElementById('apiKey').value = savedKey;
+    }
+});
+
 async function processEntry() {
     const apiKey = document.getElementById('apiKey').value;
     const text = document.getElementById('journalInput').value;
@@ -6,6 +14,9 @@ async function processEntry() {
         alert('Provide both your API key and a journal entry.');
         return;
     }
+
+    // Save the key locally in the browser so it persists next time
+    localStorage.setItem('gemini_api_key', apiKey);
 
     const btn = document.getElementById('analyzeBtn');
     const loading = document.getElementById('loading');
@@ -52,7 +63,7 @@ async function processEntry() {
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error(\`API HTTP error: \${response.status}\`);
+        if (!response.ok) throw new Error(`API HTTP error: ${response.status}`);
 
         const data = await response.json();
         const rawJsonText = data.candidates[0].content.parts[0].text;
