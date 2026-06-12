@@ -258,13 +258,13 @@ async function processEntry() {
     if (!text) { document.getElementById('journalInput').focus(); return; }
 
     const btn = document.getElementById('analyzeBtn');
-    const loading = document.getElementById('loading');
-    const results = document.getElementById('results');
+    const loadingEl = document.getElementById('loading');
+    const resultsEl = document.getElementById('results');
     const saveIndicator = document.getElementById('saveIndicator');
 
     btn.disabled = true;
-    loading.style.display = 'block';
-    results.style.display = 'none';
+    loadingEl.style.display = 'block';
+    resultsEl.style.display = 'none';
     saveIndicator.style.display = 'none';
 
     const systemInstruction = `You are a clinical CBT backend engine integrated with Stoicism, Miyamoto Musashi's warrior ethos (Dokkodo), Buddhism, and Taoism. Analyze the user's raw journal entry and return a structured JSON response.
@@ -295,7 +295,7 @@ Respond exclusively in this exact JSON schema. No preamble, no markdown fences:
 
     const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-    async function callGemini(model) {
+    const callGemini = async (model) => {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
         const response = await fetch(url, {
             method: 'POST',
@@ -309,7 +309,7 @@ Respond exclusively in this exact JSON schema. No preamble, no markdown fences:
             throw err;
         }
         return response.json();
-    }
+    };
 
     try {
         let data = null;
@@ -334,8 +334,8 @@ Respond exclusively in this exact JSON schema. No preamble, no markdown fences:
         document.getElementById('buddhistOut').textContent = parsed.buddhism;
         document.getElementById('taoistOut').textContent = parsed.taoism;
 
-        results.style.display = 'block';
-        results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        resultsEl.style.display = 'block';
+        resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         // Save to Drive if connected
         if (accessToken) {
@@ -359,6 +359,6 @@ Respond exclusively in this exact JSON schema. No preamble, no markdown fences:
             : 'Analysis failed: ' + error.message);
     } finally {
         btn.disabled = false;
-        loading.style.display = 'none';
+        loadingEl.style.display = 'none';
     }
 }
