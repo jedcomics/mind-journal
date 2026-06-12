@@ -59,10 +59,23 @@ function setKeyStatus(isSet) {
     el.className = 'status-line' + (isSet ? ' ok' : '');
 }
 
-// ── Character count ─────────────────────────────────────────
-document.getElementById('journalInput').addEventListener('input', function () {
-    document.getElementById('charCount').textContent = this.value.length + ' characters';
+// ── Character count (tracks all three ABC fields) ───────────
+['inputA', 'inputB', 'inputC'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+        const total = ['inputA', 'inputB', 'inputC']
+            .reduce((sum, fid) => sum + (document.getElementById(fid).value.length), 0);
+        document.getElementById('charCount').textContent = total + ' characters';
+    });
 });
+
+// ── Reminders toggle ─────────────────────────────────────────
+document.getElementById('remindersToggle').addEventListener('click', () => {
+    document.getElementById('remindersToggle').classList.toggle('open');
+    document.getElementById('remindersPanel').classList.toggle('open');
+});
+
+// ── Reflect button ───────────────────────────────────────────
+document.getElementById('analyzeBtn').addEventListener('click', processEntry);
 
 // ── Google Drive OAuth (GIS token client) ───────────────────
 let tokenClient;
@@ -214,7 +227,7 @@ function renderEntriesList() {
         card.innerHTML = `
             <div class="entry-card-date">${entry.date}</div>
             <div class="entry-card-distortion">${entry.analysis.distortion || 'No distortion identified'}</div>
-            <div class="entry-card-preview">${entry.text}</div>
+            <div class="entry-card-preview">${entry.textA || entry.text}</div>
         `;
         card.addEventListener('click', () => openEntryModal(entry));
         list.appendChild(card);
@@ -225,7 +238,11 @@ function renderEntriesList() {
 
 function openEntryModal(entry) {
     document.getElementById('modalDate').textContent = entry.date;
-    document.getElementById('modalEntryText').textContent = entry.text;
+    // Support both old (entry.text) and new (entry.textA/B/C) formats
+    const abcText = entry.textA
+        ? `A: ${entry.textA}\n\nB: ${entry.textB || '—'}\n\nC: ${entry.textC || '—'}`
+        : entry.text;
+    document.getElementById('modalEntryText').textContent = abcText;
     document.getElementById('modalDistortion').textContent = entry.analysis.distortion || 'None identified';
     document.getElementById('modalCbt').textContent = entry.analysis.cbt;
     document.getElementById('modalStoic').textContent = entry.analysis.stoicism;
@@ -247,7 +264,9 @@ document.getElementById('entryModal').addEventListener('click', (e) => {
 // ── Analysis ─────────────────────────────────────────────────
 async function processEntry() {
     const apiKey = localStorage.getItem('gemini_api_key');
-    const text = document.getElementById('journalInput').value.trim();
+    const textA = document.getElementById('inputA').value.trim();
+    const textB = document.getElementById('inputB').value.trim();
+    const textC = document.getElementById('inputC').value.trim();
 
     if (!apiKey) {
         document.getElementById('noKeyNotice').style.display = 'block';
@@ -255,7 +274,9 @@ async function processEntry() {
         return;
     }
     document.getElementById('noKeyNotice').style.display = 'none';
-    if (!text) { document.getElementById('journalInput').focus(); return; }
+    if (!textA && !textB && !textC) { document.getElementById('inputA').focus(); return; }
+
+    const text = `A (Activating Event): ${textA || '(not provided)'}\nB (Belief): ${textB || '(not provided)'}\nC (Consequence): ${textC || '(not provided)'}`;
 
     const btn = document.getElementById('analyzeBtn');
     const loadingEl = document.getElementById('loading');
@@ -343,6 +364,7 @@ Respond exclusively in this exact JSON schema. No preamble, no markdown fences:
                 id: Date.now(),
                 date: new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
                 text,
+                textA, textB, textC,
                 analysis: parsed
             };
             allEntries.push(entry);
@@ -362,4 +384,3 @@ Respond exclusively in this exact JSON schema. No preamble, no markdown fences:
         loadingEl.style.display = 'none';
     }
 }
-window.processEntry = processEntry;
