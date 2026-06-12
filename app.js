@@ -362,3 +362,4 @@ Respond exclusively in this exact JSON schema. No preamble, no markdown fences:
         loadingEl.style.display = 'none';
     }
 }
+window.processEntry = processEntry;
